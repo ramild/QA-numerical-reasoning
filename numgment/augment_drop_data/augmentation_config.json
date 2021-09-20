@@ -1,0 +1,8 @@
+{
+    "fixpoint_values": [0, 1, 2, 3, 4, 100, 1000, 1000000],
+    "max_change_times": 2,
+    "max_year_difference": 25,
+    "year_min": 1001,
+    "year_max": 2050,
+    "max_search_space_size": 1200
+}
