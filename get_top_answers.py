@@ -16,53 +16,6 @@ def _is_number(text: str) -> bool:
         return False
 
 
-def get_probabilities_product(inds, data):
-    return reduce(operator.mul, (datum[t] for t, datum in zip(inds, data)), 1)
-
-
-def get_next_set(inds):
-    return [
-        tuple(t - (1 if j == i else 0) for j, t in enumerate(inds))
-        for i in range(len(inds))
-        if inds[i] > 0
-    ]
-
-
-def get_top_probs(probabilities, prob_min=0.01):
-    original_prod = partial(get_probabilities_product, data=probabilities)
-
-    indexes = [np.array(d).argsort() for d in probabilities]
-    probs = [sorted(p) for p in probabilities]
-    prod = partial(get_probabilities_product, data=probs)
-    max_inds = [indexes[i][len(dat) - 1] for i, dat in enumerate(probs)]
-    if original_prod(max_inds) < prob_min:
-        return [], []
-
-    k_smallest = [max_inds]
-    possible_k_smallest = []
-    next_possible_k_smallest = tuple(len(prob) - 1 for prob in probs)
-
-    while True:
-        new_possible = sorted(
-            get_next_set(next_possible_k_smallest),
-            key=prod,
-            reverse=True,
-        )
-        possible_k_smallest = heapq.merge(
-            possible_k_smallest, new_possible, key=prod, reverse=True
-        )
-        next_possible_k_smallest = next(possible_k_smallest)
-        index_smallest = [
-            indexes[i][index] for i, index in enumerate(list(next_possible_k_smallest))
-        ]
-        if original_prod(index_smallest) >= prob_min:
-            k_smallest.append(index_smallest)
-        else:
-            break
-
-    return k_smallest, [original_prod(inds) for inds in k_smallest]
-
-
 def get_top_spans_by_min_prob(
     original_text: str,
     offsets,
@@ -95,6 +48,53 @@ def get_top_spans_by_min_prob(
             }
         )
     return answers
+
+
+def get_probabilities_product(inds, probs):
+    return reduce(operator.mul, (prob[ind] for ind, prob in zip(inds, probs)), 1)
+
+
+def get_next_set(inds):
+    return [
+        tuple(t - (1 if j == i else 0) for j, t in enumerate(inds))
+        for i in range(len(inds))
+        if inds[i] > 0
+    ]
+
+
+def get_top_probs(probabilities, prob_min=0.01):
+    original_prod = partial(get_probabilities_product, probs=probabilities)
+
+    indexes = [np.array(d).argsort() for d in probabilities]
+    probs = [sorted(p) for p in probabilities]
+    prod = partial(get_probabilities_product, probs=probs)
+    max_inds = [indexes[i][len(dat) - 1] for i, dat in enumerate(probs)]
+    if original_prod(max_inds) < prob_min:
+        return [], []
+
+    k_smallest = [max_inds]
+    possible_k_smallest = []
+    next_possible_k_smallest = tuple(len(prob) - 1 for prob in probs)
+
+    while True:
+        new_possible = sorted(
+            get_next_set(next_possible_k_smallest),
+            key=prod,
+            reverse=True,
+        )
+        possible_k_smallest = heapq.merge(
+            possible_k_smallest, new_possible, key=prod, reverse=True
+        )
+        next_possible_k_smallest = next(possible_k_smallest)
+        index_smallest = [
+            indexes[i][index] for i, index in enumerate(list(next_possible_k_smallest))
+        ]
+        if original_prod(index_smallest) >= prob_min:
+            k_smallest.append(index_smallest)
+        else:
+            break
+
+    return k_smallest, [original_prod(inds) for inds in k_smallest]
 
 
 def get_top_arithmetic_by_min_prob(
